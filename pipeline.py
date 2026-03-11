@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 import os, json
 from pathlib import Path
@@ -15,13 +14,19 @@ def main():
     load_dotenv()
     cfg = load_config(Path('config.yaml'))
     logger = setup_logging(Path('logs'), name='pipeline')
-    session = ThrottledSession(rate_limit_per_sec=cfg.rate_limit_per_sec, timeout=cfg.request_timeout, user_agent=cfg.user_agent)
+    session = ThrottledSession(
+        rate_limit_per_sec=cfg.rate_limit_per_sec,
+        timeout=cfg.request_timeout,
+        user_agent=cfg.user_agent
+    )
     out = run_dir(Path(cfg.output_dir))
     logger.info(f'Pipeline output: {out}')
 
+    # Allow a no-network smoke test in CI
     offline = os.getenv('SKIP_NETWORK', 'false').lower() == 'true'
 
     if offline:
+        # Produce deterministic placeholder outputs for CI validation
         h = {'count': 0}
         m = {'checked': 0, 'errors': 0}
         p = {'checked': 0, 'slow': 0}
@@ -30,11 +35,13 @@ def main():
     else:
         sections = cfg.sections[:6]
         h = headlines_sections.run(cfg.base_url, sections, 30, cfg.selectors, session, out)
+
         hs_path = out / 'headlines_sections.json'
         urls = []
         if hs_path.exists():
             data = json.loads(hs_path.read_text())
             urls = [row['url'] for row in data][:40]
+
         m = multimedia_validator.run(cfg.base_url, urls, cfg.selectors, session, out)
         perf_urls = [cfg.base_url] + [f"{cfg.base_url}/{s}" for s in sections]
         p = perf_monitor.run(perf_urls, session, out)
@@ -44,6 +51,7 @@ def main():
     write_json(out / 'pipeline_summary.json', summary)
     logger.info(f'Summary: {summary}')
 
+    # Email alerts summary
     alerts = []
     if os.getenv('DISABLE_EMAIL', 'false').lower() != 'true' and cfg.email.enabled:
         if m.get('errors', 0) >= cfg.thresholds.multimedia_fail_alert_min:
@@ -53,10 +61,7 @@ def main():
         if s.get('issues', 0) > cfg.thresholds.schema_max_missing:
             alerts.append(f"Articles with schema issues: {s['issues']}")
         if alerts:
-            msg = "
-".join(alerts) + f"
-
-Output: {out}"
+            msg = "\n".join(alerts) + f"\n\nOutput: {out}"
             email_alert("[NYPost QA] Pipeline Alerts", msg)
 
 if __name__ == '__main__':
