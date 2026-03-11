@@ -1,0 +1,5 @@
+body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:0;padding:0;background:#0f172a;color:#e2e8f0}
+main{max-width:960px;margin:40px auto;padding:0 16px}
+h1{font-size:28px;margin-bottom:24px}
+section{background:#111827;padding:16px;border-radius:8px;margin-bottom:16px}
+pre{white-space:pre-wrap;word-break:break-word}

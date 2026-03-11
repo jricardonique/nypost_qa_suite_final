@@ -1,0 +1,6 @@
+
+[build]
+  publish = "web"
+  command = ""
+[functions]
+  directory = "netlify/functions"
