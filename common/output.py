@@ -14,10 +14,10 @@ def run_dir(base: Path) -> Path:
     return d
 
 def write_csv(path: Path, rows: List[Dict[str, Any]]):
-    if not rows:
-        path.write_text('')
-        return
     with path.open('w', newline='', encoding='utf-8') as f:
+        if not rows:
+            f.write('')
+            return
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         writer.writeheader(); writer.writerows(rows)
 
